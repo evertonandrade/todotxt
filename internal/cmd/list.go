@@ -10,36 +10,39 @@ import (
 	"todotxt/internal/task"
 )
 
-func List(s *store.Store, args []string) {
+func List(s *store.Store, args []string) (string, error) {
 	f := filter.Parse(args)
 	if !f.OnlyCompleted && !f.ShowAll {
 		f.HideCompleted = true
 	}
-	tasks := loadTasks(s)
+	tasks, err := loadTasks(s)
+	if err != nil {
+		return "", fmt.Errorf("ao carregar tarefas: %w", err)
+	}
 	if len(tasks) == 0 {
-		fmt.Println("Nenhuma tarefa encontrada.")
-		return
+		return "Nenhuma tarefa encontrada.", nil
 	}
 
 	tasks = filterAndSort(tasks, f)
 	if len(tasks) == 0 {
-		fmt.Println("Nenhuma tarefa corresponde ao filtro.")
-		return
+		return "Nenhuma tarefa corresponde ao filtro.", nil
 	}
 
 	header := "Tarefas"
 	if len(f.Projects) > 0 || len(f.Contexts) > 0 || f.SearchText != "" {
 		header += " (filtrado)"
 	}
-	fmt.Println(colorize(colorBold, header))
-	fmt.Println(strings.Repeat("─", 60))
+
+	var sb strings.Builder
+	sb.WriteString(colorize(colorBold, header) + "\n")
+	sb.WriteString(strings.Repeat("─", 60) + "\n")
 
 	for i, t := range tasks {
-		fmt.Println(formatTaskLine(i+1, t))
+		sb.WriteString(formatTaskLine(i+1, t) + "\n")
 	}
 
-	fmt.Println()
-	fmt.Printf("Total: %d tarefa(s)\n", len(tasks))
+	sb.WriteString(fmt.Sprintf("\nTotal: %d tarefa(s)", len(tasks)))
+	return sb.String(), nil
 }
 
 func filterAndSort(tasks []*task.Task, f filter.Filter) []*task.Task {

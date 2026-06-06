@@ -2,27 +2,24 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"todotxt/internal/store"
 )
 
-func Archive(s *store.Store, _ []string) {
+func Archive(s *store.Store, _ []string) (string, error) {
 	count, err := s.Archive()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Erro ao arquivar: %v\n", err)
-		os.Exit(1)
+		return "", fmt.Errorf("ao arquivar: %w", err)
 	}
 	if count == 0 {
-		fmt.Println("Nenhuma tarefa concluída para arquivar.")
-		return
+		return "Nenhuma tarefa concluída para arquivar.", nil
 	}
-	printOK(fmt.Sprintf("%d tarefa(s) movida(s) para %s.", count, s.DoneFile))
+	return fmt.Sprintf("%d tarefa(s) movida(s) para %s.", count, s.DoneFile), nil
 }
 
-func Help() {
-	help := `todotxt — gestor de tarefas CLI compatível com todo.txt
+func Help() string {
+	return strings.TrimLeft(`todotxt — gestor de tarefas CLI compatível com todo.txt
 
 Uso:
   todotxt <comando> [argumentos]
@@ -62,6 +59,5 @@ Ficheiros:
 Variáveis de ambiente:
   TODO_DIR           diretório dos ficheiros todo.txt e done.txt
   NO_COLOR           desativa saída colorida
-`
-	fmt.Print(strings.TrimLeft(help, "\n"))
+`, "\n")
 }

@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -10,11 +10,9 @@ import (
 	"todotxt/internal/task"
 )
 
-func Add(s *store.Store, args []string) {
+func Add(s *store.Store, args []string) (string, error) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Erro: forneça uma descrição para a tarefa.")
-		fmt.Fprintln(os.Stderr, "Uso: todotxt add <descrição> [+projeto] [@contexto] [pri:A] [due:YYYY-MM-DD]")
-		os.Exit(1)
+		return "", errors.New("forneça uma descrição para a tarefa. Uso: todotxt add <descrição> [+projeto] [@contexto] [pri:A] [due:YYYY-MM-DD]")
 	}
 
 	raw := strings.Join(args, " ")
@@ -28,8 +26,7 @@ func Add(s *store.Store, args []string) {
 	due := ""
 	if rest, ok := extractToken(raw, "due:"); ok {
 		if _, err := time.Parse("2006-01-02", rest); err != nil {
-			fmt.Fprintf(os.Stderr, "Erro: data inválida para due: %q (use YYYY-MM-DD)\n", rest)
-			os.Exit(1)
+			return "", fmt.Errorf("data inválida para due: %q (use YYYY-MM-DD)", rest)
 		}
 		due = rest
 		raw = stripToken(raw, "due:")
@@ -37,8 +34,7 @@ func Add(s *store.Store, args []string) {
 
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		fmt.Fprintln(os.Stderr, "Erro: descrição vazia.")
-		os.Exit(1)
+		return "", errors.New("descrição vazia")
 	}
 
 	parts := []string{}
@@ -52,12 +48,16 @@ func Add(s *store.Store, args []string) {
 	}
 	line := strings.Join(parts, " ")
 
-	tasks := loadTasks(s)
+	tasks, err := loadTasks(s)
+	if err != nil {
+		return "", fmt.Errorf("ao carregar tarefas: %w", err)
+	}
 	tasks = append(tasks, task.Parse(line, len(tasks)+1))
-	saveTasks(s, tasks)
+	if err := saveTasks(s, tasks); err != nil {
+		return "", fmt.Errorf("ao guardar tarefas: %w", err)
+	}
 
-	printOK("Tarefa adicionada:")
-	fmt.Println("  " + line)
+	return fmt.Sprintf("Tarefa adicionada:\n  %s", line), nil
 }
 
 func extractToken(s, key string) (string, bool) {

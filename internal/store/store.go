@@ -23,11 +23,20 @@ func New(todoFile string) *Store {
 			todoFile = "todo.txt"
 		}
 	}
-	doneFile := strings.TrimSuffix(todoFile, ".txt") + ".done.txt"
-	if todoFile == "todo.txt" {
-		doneFile = "done.txt"
+	return &Store{TodoFile: todoFile, DoneFile: deriveDoneFile(todoFile)}
+}
+
+func deriveDoneFile(todoFile string) string {
+	dir := filepath.Dir(todoFile)
+	base := filepath.Base(todoFile)
+	switch {
+	case base == "todo.txt":
+		return filepath.Join(dir, "done.txt")
+	case strings.HasSuffix(base, ".todo.txt"):
+		return filepath.Join(dir, strings.TrimSuffix(base, ".todo.txt")+".done.txt")
+	default:
+		return filepath.Join(dir, strings.TrimSuffix(base, filepath.Ext(base))+".done.txt")
 	}
-	return &Store{TodoFile: todoFile, DoneFile: doneFile}
 }
 
 func (s *Store) Load() ([]*task.Task, error) {

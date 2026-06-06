@@ -2,62 +2,62 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"todotxt/internal/store"
 	"todotxt/internal/task"
 )
 
-func Do(s *store.Store, args []string) {
+func Do(s *store.Store, args []string) (string, error) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Erro: forneça o número da tarefa.")
-		fmt.Fprintln(os.Stderr, "Uso: todotxt do <número>")
-		os.Exit(1)
+		return "", fmt.Errorf("forneça o número da tarefa. Uso: todotxt do <número>")
 	}
 	num, err := task.ParseLineNumber(args[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Erro: %v\n", err)
-		os.Exit(1)
+		return "", err
 	}
 
-	tasks := loadTasks(s)
+	tasks, err := loadTasks(s)
+	if err != nil {
+		return "", fmt.Errorf("ao carregar tarefas: %w", err)
+	}
 	if num < 1 || num > len(tasks) {
-		fmt.Fprintf(os.Stderr, "Erro: tarefa %d não existe (existem %d).\n", num, len(tasks))
-		os.Exit(1)
+		return "", fmt.Errorf("tarefa %d não existe (existem %d)", num, len(tasks))
 	}
 
 	t := tasks[num-1]
 	if t.Completed {
-		fmt.Fprintf(os.Stderr, "Tarefa %d já está concluída.\n", num)
-		return
+		return "", fmt.Errorf("tarefa %d já está concluída", num)
 	}
 	t.MarkComplete()
-	saveTasks(s, tasks)
-	printOK(fmt.Sprintf("Tarefa %d concluída: %s", num, t.Description))
+	if err := saveTasks(s, tasks); err != nil {
+		return "", fmt.Errorf("ao guardar tarefas: %w", err)
+	}
+	return fmt.Sprintf("Tarefa %d concluída: %s", num, t.Description), nil
 }
 
-func Undo(s *store.Store, args []string) {
+func Undo(s *store.Store, args []string) (string, error) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "Erro: forneça o número da tarefa.")
-		os.Exit(1)
+		return "", fmt.Errorf("forneça o número da tarefa. Uso: todotxt undo <número>")
 	}
 	num, err := task.ParseLineNumber(args[0])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Erro: %v\n", err)
-		os.Exit(1)
+		return "", err
 	}
 
-	tasks := loadTasks(s)
+	tasks, err := loadTasks(s)
+	if err != nil {
+		return "", fmt.Errorf("ao carregar tarefas: %w", err)
+	}
 	if num < 1 || num > len(tasks) {
-		fmt.Fprintf(os.Stderr, "Erro: tarefa %d não existe.\n", num)
-		os.Exit(1)
+		return "", fmt.Errorf("tarefa %d não existe", num)
 	}
 	t := tasks[num-1]
 	if !t.Completed {
-		fmt.Fprintf(os.Stderr, "Tarefa %d não está concluída.\n", num)
-		return
+		return "", fmt.Errorf("tarefa %d não está concluída", num)
 	}
 	t.MarkIncomplete()
-	saveTasks(s, tasks)
-	printOK(fmt.Sprintf("Tarefa %d reaberta: %s", num, t.Description))
+	if err := saveTasks(s, tasks); err != nil {
+		return "", fmt.Errorf("ao guardar tarefas: %w", err)
+	}
+	return fmt.Sprintf("Tarefa %d reaberta: %s", num, t.Description), nil
 }

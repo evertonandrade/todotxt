@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 	"time"
@@ -22,16 +21,12 @@ const (
 	colorBold   = "\033[1m"
 )
 
-var noColor = false
-
-func init() {
-	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
-		noColor = true
-	}
+func isNoColor() bool {
+	return os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
 }
 
 func colorize(c, s string) string {
-	if noColor {
+	if isNoColor() {
 		return s
 	}
 	return c + s + colorReset
@@ -153,26 +148,10 @@ func isDateValue(s string) bool {
 	return err == nil
 }
 
-func loadTasks(s *store.Store) []*task.Task {
-	tasks, err := s.Load()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Erro ao carregar tarefas: %v\n", err)
-		os.Exit(1)
-	}
-	return tasks
+func loadTasks(s *store.Store) ([]*task.Task, error) {
+	return s.Load()
 }
 
-func saveTasks(s *store.Store, tasks []*task.Task) {
-	if err := s.Save(tasks); err != nil {
-		fmt.Fprintf(os.Stderr, "Erro ao guardar tarefas: %v\n", err)
-		os.Exit(1)
-	}
-}
-
-func printErr(w io.Writer, msg string) {
-	fmt.Fprintln(w, colorize(colorRed, "✗ ")+msg)
-}
-
-func printOK(msg string) {
-	fmt.Println(colorize(colorGreen, "✓ ") + msg)
+func saveTasks(s *store.Store, tasks []*task.Task) error {
+	return s.Save(tasks)
 }
