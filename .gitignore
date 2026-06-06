@@ -1,0 +1,14 @@
+bin/
+*.test
+*.out
+
+todo.txt
+done.txt
+*.todo.txt
+*.done.txt
+
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
