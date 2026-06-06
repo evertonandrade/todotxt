@@ -41,7 +41,7 @@ jobs:
             GOOS=$os GOARCH=$arch go build \
               -trimpath \
               -ldflags="-s -w" \
-              -o "dist/todotxt-${TAG_NAME}-${os}-${arch}${ext}" \
+              -o "dist/todotxt-${TAG_NAME}-${os}_${arch}${ext}" \
               .
           }
 
