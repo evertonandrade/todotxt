@@ -37,11 +37,13 @@ jobs:
 
           build() {
             local os=$1 arch=$2 ext=$3
+            local target="dist/todotxt-${TAG_NAME}-${os}_${arch}"
+            mkdir -p "$target"
             echo "Building ${os}/${arch}..."
             GOOS=$os GOARCH=$arch go build \
               -trimpath \
               -ldflags="-s -w" \
-              -o "dist/todotxt-${TAG_NAME}-${os}_${arch}${ext}" \
+              -o "${target}/todotxt${ext}" \
               .
           }
 
@@ -51,8 +53,6 @@ jobs:
           build darwin  arm64 ""
           build windows amd64 ".exe"
           build windows arm64 ".exe"
-
-          ls -la dist/
 
       - name: Package archives
         env:
@@ -65,23 +65,16 @@ jobs:
 
           for target in linux_amd64 linux_arm64 darwin_amd64 darwin_arm64; do
             dir="todotxt-${TAG_NAME}-${target}"
-            mkdir -p "$dir"
-            mv "todotxt-${TAG_NAME}-${target}" "$dir/todotxt"
             cp README.md LICENSE "$dir/"
             tar -czf "${dir}.tar.gz" "$dir"
-            rm -rf "$dir"
           done
 
           for target in windows_amd64 windows_arm64; do
             dir="todotxt-${TAG_NAME}-${target}"
-            mkdir -p "$dir"
-            mv "todotxt-${TAG_NAME}-${target}.exe" "$dir/todotxt.exe"
             cp README.md LICENSE "$dir/"
             (cd "$dir" && zip -r "../${dir}.zip" .)
-            rm -rf "$dir"
           done
 
-          rm -f "todotxt-${TAG_NAME}-"*
           ls -la
 
       - name: Generate checksums
